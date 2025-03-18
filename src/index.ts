@@ -38,6 +38,18 @@ export class ZipLoader {
         this._remoteUrl = value;
     }
 
+    public get remoteUrl(): string {
+        return this._remoteUrl;
+    }
+
+    public getZipCache(): Map<string, any> {
+        return ZipCache;
+    }
+
+    public getResCache(): Map<string, any> {
+        return ResCache;
+    }
+
     /**
      * 下载zip文件
      */
