@@ -1,0 +1,45 @@
+{
+  "name": "cccbundlezip",
+  "version": "1.0.0",
+  "description": " cocos creator bundle解压zip",
+  "type": "module",
+  "main": "./dist/cjs/index.js",
+  "module": "./dist/esm/index.js",
+  "types": "./dist/types/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/esm/index.js",
+      "require": "./dist/cjs/index.js",
+      "types": "./dist/types/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "npm run clean && npm run build:cjs && npm run build:esm && npm run build:types",
+    "build:cjs": "tsc -p tsconfig.cjs.json",
+    "build:esm": "tsc -p tsconfig.esm.json",
+    "build:types": "tsc -p tsconfig.types.json",
+    "clean": "rimraf dist"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/haizeiym/cccbundlezip.git"
+  },
+  "keywords": [
+    "cocoscreator",
+    "zip",
+    "bundle"
+  ],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "typescript": "^4.9.5"
+  },
+  "bugs": {
+    "url": "https://github.com/haizeiym/cccbundlezip/issues"
+  },
+  "homepage": "https://github.com/haizeiym/cccbundlezip#readme",
+  "dependencies": {
+    "jszip": "^3.10.1",
+    "rimraf": "^6.0.1"
+  }
+}
