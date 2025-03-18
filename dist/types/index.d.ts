@@ -4,6 +4,9 @@ export declare class ZipLoader {
     static get instance(): ZipLoader;
     private _remoteUrl;
     set remoteUrl(value: string);
+    get remoteUrl(): string;
+    getZipCache(): Map<string, any>;
+    getResCache(): Map<string, any>;
     /**
      * 下载zip文件
      */

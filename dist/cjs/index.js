@@ -62,12 +62,21 @@ var ZipLoader = /** @class */ (function () {
         configurable: true
     });
     Object.defineProperty(ZipLoader.prototype, "remoteUrl", {
+        get: function () {
+            return this._remoteUrl;
+        },
         set: function (value) {
             this._remoteUrl = value;
         },
         enumerable: false,
         configurable: true
     });
+    ZipLoader.prototype.getZipCache = function () {
+        return ZipCache;
+    };
+    ZipLoader.prototype.getResCache = function () {
+        return ResCache;
+    };
     /**
      * 下载zip文件
      */
