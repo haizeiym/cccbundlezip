@@ -10,6 +10,7 @@ declare const cc: {
             extMap: { [key: string]: Function };
         };
     };
+    director:any;
     warn?: (...args: any[]) => void;
     error?: (...args: any[]) => void;
 };
@@ -195,13 +196,16 @@ export class ZipLoader {
         const zip = new JSZip();
         try {
             const contents = await zip.loadAsync(data);
-
+            // 使用 cc.director 判断是否为 3.x 版本
+            const isVersion3 = 'root' in cc.director;
+            const cachePath = isVersion3 ? 'remote' : 'assets';
+            console.log("cachePath", cachePath);
             // 遍历所有文件
             for (const path in contents.files) {
                 const file = contents.files[path];
                 if (!file.dir) {
                     // 缓存zip文件
-                    const fullPath = `assets/${bundleName}/${path}`;
+                    const fullPath = `${cachePath}/${bundleName}/${path}`;
                     ZipCache.set(fullPath, file);
                 }
             }
