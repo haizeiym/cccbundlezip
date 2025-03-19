@@ -219,7 +219,7 @@ var ZipLoader = /** @class */ (function () {
      */
     ZipLoader.prototype._parseZip = function (data, bundleName) {
         return __awaiter(this, void 0, void 0, function () {
-            var zip, contents, path, file, fullPath, error_2;
+            var zip, contents, isVersion3, cachePath, path, file, fullPath, error_2;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -230,11 +230,14 @@ var ZipLoader = /** @class */ (function () {
                         return [4 /*yield*/, zip.loadAsync(data)];
                     case 2:
                         contents = _a.sent();
+                        isVersion3 = 'root' in cc.director;
+                        cachePath = isVersion3 ? 'remote' : 'assets';
+                        console.log("cachePath", cachePath);
                         // 遍历所有文件
                         for (path in contents.files) {
                             file = contents.files[path];
                             if (!file.dir) {
-                                fullPath = "assets/".concat(bundleName, "/").concat(path);
+                                fullPath = "".concat(cachePath, "/").concat(bundleName, "/").concat(path);
                                 ZipCache.set(fullPath, file);
                             }
                         }
