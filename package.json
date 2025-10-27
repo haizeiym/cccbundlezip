@@ -1,6 +1,6 @@
 {
   "name": "cccbundlezip",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": " cocos creator bundle解压zip",
   "main": "./dist/cjs/index.min.js",
   "module": "./dist/esm/index.min.js",
