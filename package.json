@@ -8,13 +8,13 @@
   "exports": {
     ".": {
       "types": "./dist/types/index.d.ts",
-      "import": "./dist/esm/index.min.js",
-      "require": "./dist/cjs/index.min.js"
+      "require": "./dist/esm/index.min.js",
+      "import": "./dist/cjs/index.min.js"
     },
     "./dev": {
       "types": "./dist/types/index.d.ts",
-      "import": "./dist/esm/index.js",
-      "require": "./dist/cjs/index.js"
+      "require": "./dist/esm/index.js",
+      "import": "./dist/cjs/index.js"
     }
   },
   "scripts": {
