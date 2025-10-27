@@ -3,12 +3,30 @@ interface ZipFileObject {
     dir: boolean;
     async: (type: string) => Promise<any>;
 }
+/**
+ * 设置全局日志开关
+ * @param enabled 是否启用日志
+ */
+export declare function setGlobalLogEnabled(enabled: boolean): void;
+/**
+ * 获取全局日志开关状态
+ * @returns 是否启用日志
+ */
+export declare function isGlobalLogEnabled(): boolean;
 export declare class ZipLoader {
     private static _instance;
     private _isInit;
     private _remoteUrl;
     private _password;
     static get instance(): ZipLoader;
+    /**
+     * 设置全局日志开关
+     */
+    static setLogEnabled(enabled: boolean): void;
+    /**
+     * 获取全局日志开关状态
+     */
+    static isLogEnabled(): boolean;
     set remoteUrl(value: string);
     get remoteUrl(): string;
     set password(value: string);
