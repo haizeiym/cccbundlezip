@@ -2,9 +2,19 @@
     "extends": "./tsconfig.json",
     "compilerOptions": {
         "module": "ESNext",
-        "target": "ES5",
+        "target": "ES2015",
         "outDir": "./dist/esm",
         "declaration": false,
-        "declarationMap": false
-    }
+        "declarationMap": false,
+        "noEmit": false,
+        "allowJs": false,
+        "lib": ["ES2015", "DOM"]
+    },
+    "include": [
+        "src/index.ts"
+    ],
+    "exclude": [
+        "node_modules",
+        "dist"
+    ]
 }

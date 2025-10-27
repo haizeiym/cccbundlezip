@@ -4,6 +4,14 @@
         "outDir": "./dist/types",
         "noEmit": false,
         "declaration": true,
-        "emitDeclarationOnly": true
-    }
+        "emitDeclarationOnly": true,
+        "allowJs": false
+    },
+    "include": [
+        "src/index.ts"
+    ],
+    "exclude": [
+        "node_modules",
+        "dist"
+    ]
 }

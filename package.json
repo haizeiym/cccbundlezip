@@ -2,22 +2,29 @@
   "name": "cccbundlezip",
   "version": "2.0.0",
   "description": " cocos creator bundle解压zip",
-  "type": "module",
   "main": "./dist/cjs/index.js",
   "module": "./dist/esm/index.js",
   "types": "./dist/types/index.d.ts",
   "exports": {
     ".": {
+      "types": "./dist/types/index.d.ts",
       "import": "./dist/esm/index.js",
-      "require": "./dist/cjs/index.js",
-      "types": "./dist/types/index.d.ts"
+      "require": "./dist/cjs/index.js"
+    },
+    "./min": {
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/esm/index.min.js",
+      "require": "./dist/cjs/index.min.js"
     }
   },
   "scripts": {
-    "build": "npm run clean && npm run build:cjs && npm run build:esm && npm run build:types",
+    "build": "npm run clean && npm run build:cjs && npm run build:esm && npm run build:types && npm run minify",
     "build:cjs": "tsc -p tsconfig.cjs.json",
     "build:esm": "tsc -p tsconfig.esm.json",
     "build:types": "tsc -p tsconfig.types.json",
+    "minify": "npm run minify:cjs && npm run minify:esm",
+    "minify:cjs": "esbuild dist/cjs/index.js --outfile=dist/cjs/index.min.js --minify --format=cjs --keep-names",
+    "minify:esm": "esbuild dist/esm/index.js --outfile=dist/esm/index.min.js --minify --format=esm --keep-names",
     "clean": "rimraf dist"
   },
   "repository": {
@@ -32,6 +39,8 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "esbuild": "^0.25.11",
+    "terser": "^5.44.0",
     "typescript": "^4.9.5"
   },
   "bugs": {

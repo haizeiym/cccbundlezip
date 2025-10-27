@@ -13,7 +13,7 @@
         "skipLibCheck": true,
         "forceConsistentCasingInFileNames": true,
         "moduleResolution": "node",
-        "allowJs": true,
+        "allowJs": false,
         "noImplicitAny": false,
         "noImplicitReturns": false,
         "noImplicitThis": false,
@@ -34,7 +34,6 @@
     ],
     "exclude": [
         "node_modules",
-        "dist",
-        "src/fflate.js"
+        "dist"
     ]
 }
