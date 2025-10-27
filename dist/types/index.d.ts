@@ -3,8 +3,11 @@ export declare class ZipLoader {
     private _isInit;
     static get instance(): ZipLoader;
     private _remoteUrl;
+    private _password;
     set remoteUrl(value: string);
     get remoteUrl(): string;
+    set password(value: string);
+    get password(): string;
     getZipCache(): Map<string, any>;
     getResCache(): Map<string, any>;
     /**

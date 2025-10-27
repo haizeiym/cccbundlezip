@@ -1,24 +1,36 @@
 {
     "compilerOptions": {
-        "target": "ES5",
-        "module": "ESNext",
-        "lib": [
-            "ES2015",
-            "DOM"
-        ],
-        "declaration": true,
-        "strict": true,
+        "target": "es2017",
+        "module": "es2020",
+        "declaration": false,
+        "strict": false,
         "esModuleInterop": true,
+        "allowSyntheticDefaultImports": true,
         "skipLibCheck": true,
         "forceConsistentCasingInFileNames": true,
         "moduleResolution": "node",
-        "allowJs": true
+        "allowJs": true,
+        "noImplicitAny": false,
+        "noImplicitReturns": false,
+        "noImplicitThis": false,
+        "noUnusedLocals": false,
+        "noUnusedParameters": false,
+        "exactOptionalPropertyTypes": false,
+        "noImplicitOverride": false,
+        "noPropertyAccessFromIndexSignature": false,
+        "noUncheckedIndexedAccess": false,
+        "downlevelIteration": true,
+        "isolatedModules": false,
+        "noEmit": true,
+        "noEmitOnError": false,
+        "outDir": "./dist"
     },
     "include": [
-        "src"
+        "src/index.ts"
     ],
     "exclude": [
         "node_modules",
-        "dist"
+        "dist",
+        "src/fflate.js"
     ]
 }
