@@ -23,8 +23,8 @@
     "build:esm": "tsc -p tsconfig.esm.json",
     "build:types": "tsc -p tsconfig.types.json",
     "minify": "npm run minify:cjs && npm run minify:esm",
-    "minify:cjs": "esbuild dist/cjs/index.js --outfile=dist/cjs/index.min.js --minify --format=cjs --keep-names",
-    "minify:esm": "esbuild dist/esm/index.js --outfile=dist/esm/index.min.js --minify --format=esm --keep-names",
+    "minify:cjs": "esbuild src/index.ts --bundle --outfile=dist/cjs/index.min.js --minify --format=cjs --keep-names --external:canvas --external:text-encoding --external:xmlhttprequest && rm dist/cjs/index.js",
+    "minify:esm": "esbuild src/index.ts --bundle --outfile=dist/esm/index.min.js --minify --format=esm --keep-names --external:canvas --external:text-encoding --external:xmlhttprequest && rm dist/esm/index.js",
     "clean": "rimraf dist"
   },
   "repository": {
@@ -49,7 +49,6 @@
   "homepage": "https://github.com/haizeiym/cccbundlezip#readme",
   "dependencies": {
     "canvas": "^3.2.0",
-    "fflate": "^0.8.2",
     "rimraf": "^6.0.1",
     "text-encoding": "^0.7.0",
     "xmlhttprequest": "^1.8.0"

@@ -7,7 +7,7 @@ declare const cc: {
     };
 };
 
-import { inflateSync } from "fflate";
+import * as fflate from "./fflate.js";
 
 // ============================== 常量定义 ==============================
 
@@ -254,7 +254,7 @@ const readZipFileData = (
  */
 const decompressData = (fileData: Uint8Array, compressionMethod: number, uncompressedSize: number): Uint8Array => {
     if (compressionMethod === ZIP_COMPRESSION_DEFLATE) {
-        return inflateSync(fileData, { out: new Uint8Array(uncompressedSize) });
+        return fflate.default.inflateSync(fileData, { out: new Uint8Array(uncompressedSize) });
     } else if (compressionMethod === ZIP_COMPRESSION_STORE) {
         return fileData;
     } else {
