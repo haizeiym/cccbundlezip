@@ -2,19 +2,19 @@
   "name": "cccbundlezip",
   "version": "2.0.0",
   "description": " cocos creator bundle解压zip",
-  "main": "./dist/cjs/index.js",
-  "module": "./dist/esm/index.js",
+  "main": "./dist/cjs/index.min.js",
+  "module": "./dist/esm/index.min.js",
   "types": "./dist/types/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/types/index.d.ts",
-      "import": "./dist/esm/index.js",
-      "require": "./dist/cjs/index.js"
-    },
-    "./min": {
-      "types": "./dist/types/index.d.ts",
       "import": "./dist/esm/index.min.js",
       "require": "./dist/cjs/index.min.js"
+    },
+    "./dev": {
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/esm/index.js",
+      "require": "./dist/cjs/index.js"
     }
   },
   "scripts": {
