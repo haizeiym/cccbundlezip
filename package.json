@@ -1,6 +1,6 @@
 {
   "name": "cccbundlezip",
-  "version": "2.0.3",
+  "version": "2.0.5",
   "description": " cocos creator bundle解压zip",
   "main": "./dist/cjs/index.min.js",
   "module": "./dist/esm/index.min.js",
@@ -8,13 +8,21 @@
   "exports": {
     ".": {
       "types": "./dist/types/index.d.ts",
-      "require": "./dist/esm/index.min.js",
+      "require": "./dist/cjs/index.min.js",
       "import": "./dist/cjs/index.min.js"
     },
     "./dev": {
       "types": "./dist/types/index.d.ts",
-      "require": "./dist/esm/index.js",
+      "require": "./dist/cjs/index.js",
       "import": "./dist/cjs/index.js"
+    },
+    "./esm": {
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/esm/index.min.js"
+    },
+    "./esm/dev": {
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/esm/index.js"
     }
   },
   "scripts": {
@@ -23,7 +31,7 @@
     "build:esm": "tsc -p tsconfig.esm.json",
     "build:types": "tsc -p tsconfig.types.json",
     "minify": "npm run minify:cjs && npm run minify:esm",
-    "minify:cjs": "esbuild src/index.ts --bundle --outfile=dist/cjs/index.min.js --minify --format=cjs --keep-names --external:canvas --external:text-encoding --external:xmlhttprequest && rm dist/cjs/index.js",
+    "minify:cjs": "esbuild src/index.ts --bundle --outfile=dist/cjs/index.min.js --minify --format=cjs --platform=node --keep-names --external:canvas --external:text-encoding --external:xmlhttprequest && rm dist/cjs/index.js",
     "minify:esm": "esbuild src/index.ts --bundle --outfile=dist/esm/index.min.js --minify --format=esm --keep-names --external:canvas --external:text-encoding --external:xmlhttprequest && rm dist/esm/index.js",
     "clean": "rimraf dist"
   },
