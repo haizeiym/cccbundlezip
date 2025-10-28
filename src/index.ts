@@ -29,10 +29,40 @@ const IMAGE_EXTENSIONS = [".png", ".jpg", ".jpeg", ".webp", ".bmp", ...TEXTURE_F
 
 // 缓存配置
 const CACHE_CONFIG = {
-    MAX_RES_CACHE_SIZE: 100, // ResCache 最大缓存数量
-    MAX_RES_CACHE_MEMORY: 50 * 1024 * 1024, // ResCache 最大内存 50MB
+    MAX_RES_CACHE_SIZE: 1000, // ResCache 最大缓存数量
+    MAX_RES_CACHE_MEMORY: 148 * 1024 * 1024, // ResCache 最大内存 148MB
     ENABLE_CACHE_LOGGING: true // 是否启用缓存日志
 };
+
+/**
+ * 配置缓存参数
+ */
+export function configureCache(options: {
+    maxSize?: number;
+    maxMemory?: number;
+    enableLogging?: boolean;
+}): void {
+    if (options.maxSize != null && options.maxSize >= 0) {
+        CACHE_CONFIG.MAX_RES_CACHE_SIZE = options.maxSize;
+    }
+    if (options.maxMemory != null && options.maxMemory >= 0) {
+        CACHE_CONFIG.MAX_RES_CACHE_MEMORY = options.maxMemory;
+    }
+    if (typeof options.enableLogging === 'boolean') {
+        CACHE_CONFIG.ENABLE_CACHE_LOGGING = options.enableLogging;
+    }
+}
+
+/**
+ * 获取当前缓存配置
+ */
+export function getCacheConfig(): { maxSize: number; maxMemory: number; enableLogging: boolean } {
+    return {
+        maxSize: CACHE_CONFIG.MAX_RES_CACHE_SIZE,
+        maxMemory: CACHE_CONFIG.MAX_RES_CACHE_MEMORY,
+        enableLogging: CACHE_CONFIG.ENABLE_CACHE_LOGGING
+    };
+}
 
 // ============================== 类型定义 ==============================
 
@@ -65,6 +95,10 @@ interface ExtendedXHR extends XMLHttpRequest {
 
 // 资源缓存Map（存储处理后的最终资源）
 const ResCache = new Map<string, any>();
+// 资源缓存大小（字节）
+const ResCacheSize = new Map<string, number>();
+// 资源缓存当前总内存（字节）
+let ResCacheTotalMemory = 0;
 
 // ZIP文件缓存Map（存储ZIP解压的原始数据，临时使用）
 const ZipCache = new Map<string, ZipFileObject>();
@@ -144,9 +178,78 @@ const updateResCacheAccessTime = (url: string): void => {
 /**
  * 缓存资源到 ResCache
  */
+const estimateResourceSize = (resource: any): number => {
+    if (!resource) return 0;
+    // ArrayBuffer / Uint8Array / typed arrays
+    if (resource instanceof ArrayBuffer) return resource.byteLength || 0;
+    if (ArrayBuffer.isView(resource) && resource.buffer) return resource.byteLength || 0;
+    // Blob
+    if (typeof Blob !== "undefined" && resource instanceof Blob) return resource.size || 0;
+    // String (UTF-16 approx or treat as UTF-8 length)
+    if (typeof resource === "string") return resource.length * 2;
+    // Image (approx RGBA)
+    if (typeof Image !== "undefined" && resource instanceof Image) {
+        const w = (resource.naturalWidth || (resource as any).width || 0) as number;
+        const h = (resource.naturalHeight || (resource as any).height || 0) as number;
+        return w > 0 && h > 0 ? w * h * 4 : 1024 * 1024; // 1MB fallback
+    }
+    // Fallback for objects
+    try {
+        return JSON.stringify(resource).length;
+    } catch {
+        return 0;
+    }
+};
+
+const enforceResCacheLimits = (): void => {
+    // 数量限制（按 LRU 清理 30%）
+    if (ResCache.size > CACHE_CONFIG.MAX_RES_CACHE_SIZE) {
+        const entries = Array.from(ResCacheAccessTime.entries()).sort((a, b) => a[1] - b[1]);
+        const deleteCount = Math.max(1, Math.floor(ResCache.size * 0.3));
+        for (let i = 0; i < deleteCount && i < entries.length; i++) {
+            const [key] = entries[i];
+            const old = ResCacheSize.get(key) || 0;
+            ResCache.delete(key);
+            ResCacheAccessTime.delete(key);
+            ResCacheSize.delete(key);
+            ResCacheTotalMemory -= old;
+        }
+        logIfEnabled('log', `[ZipLoader] ResCache 触发数量清理，已清理 ${deleteCount} 项，剩余 ${ResCache.size} 项`);
+    }
+
+    // 内存限制（按 LRU 清理直到达标）
+    if (ResCacheTotalMemory > CACHE_CONFIG.MAX_RES_CACHE_MEMORY) {
+        const entries = Array.from(ResCacheAccessTime.entries()).sort((a, b) => a[1] - b[1]);
+        let removed = 0;
+        for (let i = 0; i < entries.length && ResCacheTotalMemory > CACHE_CONFIG.MAX_RES_CACHE_MEMORY; i++) {
+            const [key] = entries[i];
+            if (!ResCache.has(key)) continue;
+            const size = ResCacheSize.get(key) || 0;
+            ResCache.delete(key);
+            ResCacheAccessTime.delete(key);
+            ResCacheSize.delete(key);
+            ResCacheTotalMemory -= size;
+            removed++;
+        }
+        logIfEnabled('log', `[ZipLoader] ResCache 触发内存清理，移除 ${removed} 项，当前内存 ${(ResCacheTotalMemory/1024/1024).toFixed(2)}MB`);
+    }
+};
+
 const cacheResource = (url: string, resource: any): void => {
+    // 移除旧值占用
+    if (ResCache.has(url)) {
+        const oldSize = ResCacheSize.get(url) || 0;
+        ResCacheTotalMemory -= oldSize;
+    }
+
     ResCache.set(url, resource);
     updateResCacheAccessTime(url);
+
+    const size = estimateResourceSize(resource);
+    ResCacheSize.set(url, size);
+    ResCacheTotalMemory += size;
+
+    enforceResCacheLimits();
 };
 
 /**
@@ -362,6 +465,20 @@ export class ZipLoader {
         return isGlobalLogEnabled();
     }
 
+    /**
+     * 配置 ResCache 参数
+     */
+    static configureResCache(options: { maxSize?: number; maxMemory?: number; enableLogging?: boolean }): void {
+        configureCache(options);
+    }
+
+    /**
+     * 获取当前 ResCache 配置
+     */
+    static getResCacheConfig(): { maxSize: number; maxMemory: number; enableLogging: boolean } {
+        return getCacheConfig();
+    }
+
     // -------------------- 属性访问器 --------------------
 
     public set remoteUrl(value: string) {
@@ -401,22 +518,14 @@ export class ZipLoader {
             const size = ResCache.size;
             ResCache.clear();
             ResCacheAccessTime.clear();
+            ResCacheSize.clear();
+            ResCacheTotalMemory = 0;
             logIfEnabled('log', `[ZipLoader] ResCache 已全部清理，共 ${size} 项`);
             return;
         }
 
-        // 超过数量限制时，清理最久未使用的
-        if (ResCache.size > CACHE_CONFIG.MAX_RES_CACHE_SIZE) {
-            const entries = Array.from(ResCacheAccessTime.entries()).sort((a, b) => a[1] - b[1]);
-            const deleteCount = Math.floor(ResCache.size * 0.3); // 清理30%
-
-            for (let i = 0; i < deleteCount; i++) {
-                const [key] = entries[i];
-                ResCache.delete(key);
-                ResCacheAccessTime.delete(key);
-            }
-            logIfEnabled('log', `[ZipLoader] ResCache 已清理 ${deleteCount} 项，剩余 ${ResCache.size} 项`);
-        }
+        // 统一由 enforceResCacheLimits 控制
+        enforceResCacheLimits();
     }
 
     /**

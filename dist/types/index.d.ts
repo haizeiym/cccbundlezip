@@ -1,3 +1,19 @@
+/**
+ * 配置缓存参数
+ */
+export declare function configureCache(options: {
+    maxSize?: number;
+    maxMemory?: number;
+    enableLogging?: boolean;
+}): void;
+/**
+ * 获取当前缓存配置
+ */
+export declare function getCacheConfig(): {
+    maxSize: number;
+    maxMemory: number;
+    enableLogging: boolean;
+};
 interface ZipFileObject {
     name: string;
     dir: boolean;
@@ -27,6 +43,22 @@ export declare class ZipLoader {
      * 获取全局日志开关状态
      */
     static isLogEnabled(): boolean;
+    /**
+     * 配置 ResCache 参数
+     */
+    static configureResCache(options: {
+        maxSize?: number;
+        maxMemory?: number;
+        enableLogging?: boolean;
+    }): void;
+    /**
+     * 获取当前 ResCache 配置
+     */
+    static getResCacheConfig(): {
+        maxSize: number;
+        maxMemory: number;
+        enableLogging: boolean;
+    };
     set remoteUrl(value: string);
     get remoteUrl(): string;
     set password(value: string);
