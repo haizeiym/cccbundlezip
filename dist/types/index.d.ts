@@ -15,8 +15,6 @@ export declare function getCacheConfig(): {
     enableLogging: boolean;
 };
 interface ZipFileObject {
-    name: string;
-    dir: boolean;
     async: (type: string) => Promise<any>;
 }
 /**
