@@ -37,18 +37,14 @@ const CACHE_CONFIG = {
 /**
  * 配置缓存参数
  */
-export function configureCache(options: {
-    maxSize?: number;
-    maxMemory?: number;
-    enableLogging?: boolean;
-}): void {
+export function configureCache(options: { maxSize?: number; maxMemory?: number; enableLogging?: boolean }): void {
     if (options.maxSize != null && options.maxSize >= 0) {
         CACHE_CONFIG.MAX_RES_CACHE_SIZE = options.maxSize;
     }
     if (options.maxMemory != null && options.maxMemory >= 0) {
         CACHE_CONFIG.MAX_RES_CACHE_MEMORY = options.maxMemory;
     }
-    if (typeof options.enableLogging === 'boolean') {
+    if (typeof options.enableLogging === "boolean") {
         CACHE_CONFIG.ENABLE_CACHE_LOGGING = options.enableLogging;
     }
 }
@@ -79,8 +75,7 @@ interface ZipEntry {
 
 // ZIP 文件对象接口
 interface ZipFileObject {
-    name: string;
-    dir: boolean;
+    // dir: boolean;
     async: (type: string) => Promise<any>;
 }
 
@@ -88,6 +83,7 @@ interface ZipFileObject {
 interface ExtendedXHR extends XMLHttpRequest {
     zipCacheUrl?: string;
     zipCachePath?: string;
+    zipCacheKey?: string;
     isFromCache?: boolean;
 }
 
@@ -135,7 +131,7 @@ export function isGlobalLogEnabled(): boolean {
  * @param message 日志消息
  * @param ...args 额外参数
  */
-function logIfEnabled(level: 'log' | 'error' | 'warn' | 'info', message: string, ...args: any[]): void {
+function logIfEnabled(level: "log" | "error" | "warn" | "info", message: string, ...args: any[]): void {
     if (globalLogEnabled) {
         console[level](message, ...args);
     }
@@ -166,6 +162,20 @@ const decryptData = (data: Uint8Array, password: string): Uint8Array => {
 const extractFilePath = (url: string): string => {
     const pathMatch = url.match(/(?:remote|assets)\/(.+)$/);
     return pathMatch ? pathMatch[1] : url;
+};
+
+/**
+ * 根据文件路径生成 ZipCache 的键值
+ */
+const getZipCacheKey = (path: string): string => {
+    const uuidMatch = path.match(/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/);
+    if (uuidMatch) {
+        return uuidMatch[0];
+    }
+
+    const filename = path.split("/").pop() || path;
+    const dotIndex = filename.indexOf(".");
+    return dotIndex === -1 ? filename : filename.slice(0, dotIndex);
 };
 
 /**
@@ -214,7 +224,7 @@ const enforceResCacheLimits = (): void => {
             ResCacheSize.delete(key);
             ResCacheTotalMemory -= old;
         }
-        logIfEnabled('log', `[ZipLoader] ResCache 触发数量清理，已清理 ${deleteCount} 项，剩余 ${ResCache.size} 项`);
+        logIfEnabled("log", `[ZipLoader] ResCache 触发数量清理，已清理 ${deleteCount} 项，剩余 ${ResCache.size} 项`);
     }
 
     // 内存限制（按 LRU 清理直到达标）
@@ -231,7 +241,14 @@ const enforceResCacheLimits = (): void => {
             ResCacheTotalMemory -= size;
             removed++;
         }
-        logIfEnabled('log', `[ZipLoader] ResCache 触发内存清理，移除 ${removed} 项，当前内存 ${(ResCacheTotalMemory/1024/1024).toFixed(2)}MB`);
+        logIfEnabled(
+            "log",
+            `[ZipLoader] ResCache 触发内存清理，移除 ${removed} 项，当前内存 ${(
+                ResCacheTotalMemory /
+                1024 /
+                1024
+            ).toFixed(2)}MB`
+        );
     }
 };
 
@@ -327,8 +344,6 @@ const parseZipEntry = (data: ArrayBuffer, view: DataView, offset: number, passwo
     const compressedSize = view.getUint32(offset + 20, true);
     const uncompressedSize = view.getUint32(offset + 24, true);
     const fileNameLength = view.getUint16(offset + 28, true);
-    const extraFieldLength = view.getUint16(offset + 30, true);
-    const commentLength = view.getUint16(offset + 32, true);
     const localHeaderOffset = view.getUint32(offset + 42, true);
     const crc32 = view.getUint32(offset + 16, true);
 
@@ -403,10 +418,9 @@ const decompressData = (fileData: Uint8Array, compressionMethod: number, uncompr
 /**
  * 创建 ZIP 文件对象（类似 JSZip 的接口）
  */
-const createZipFileObject = (path: string, entry: ZipEntry): ZipFileObject => {
+const createZipFileObject = (entry: ZipEntry): ZipFileObject => {
     return {
-        name: path,
-        dir: false,
+        // dir: false,
         async: (type: string) => {
             return new Promise((resolve, reject) => {
                 try {
@@ -520,7 +534,7 @@ export class ZipLoader {
             ResCacheAccessTime.clear();
             ResCacheSize.clear();
             ResCacheTotalMemory = 0;
-            logIfEnabled('log', `[ZipLoader] ResCache 已全部清理，共 ${size} 项`);
+            logIfEnabled("log", `[ZipLoader] ResCache 已全部清理，共 ${size} 项`);
             return;
         }
 
@@ -534,7 +548,7 @@ export class ZipLoader {
     public clearZipCache(): void {
         const size = ZipCache.size;
         ZipCache.clear();
-        logIfEnabled('log', `[ZipLoader] ZipCache 已清理，共 ${size} 项`);
+        logIfEnabled("log", `[ZipLoader] ZipCache 已清理，共 ${size} 项`);
     }
 
     // -------------------- ZIP 加载 --------------------
@@ -574,7 +588,7 @@ export class ZipLoader {
                     this._initImageLoaders();
                     this._hookXMLHttpRequest();
                     this._isInit = true;
-                    logIfEnabled('log', "[ZipLoader] 初始化完成");
+                    logIfEnabled("log", "[ZipLoader] 初始化完成");
                 }
 
                 // 下载 ZIP 文件
@@ -588,7 +602,7 @@ export class ZipLoader {
 
                 resolve();
             } catch (error) {
-                logIfEnabled('error', "[ZipLoader] Load zip failed:", error);
+                logIfEnabled("error", "[ZipLoader] Load zip failed:", error);
                 reject(error);
             }
         });
@@ -602,16 +616,16 @@ export class ZipLoader {
     private _parseZip(data: ArrayBuffer): void {
         try {
             const entries = parseZipFile(data, this._password);
-
             // 缓存所有文件
             for (const [path, entry] of entries) {
-                const fileObject = createZipFileObject(path, entry);
-                ZipCache.set(path, fileObject);
+                const fileObject = createZipFileObject(entry);
+                const cacheKey = getZipCacheKey(path);
+                ZipCache.set(cacheKey, fileObject);
             }
 
-            logIfEnabled('log', `[ZipLoader] ZIP 解析完成，缓存了 ${entries.size} 个文件`);
+            logIfEnabled("log", `[ZipLoader] ZIP 解析完成，缓存了 ${entries.size} 个文件`);
         } catch (error) {
-            logIfEnabled('error', "[ZipLoader] Parse zip failed:", error);
+            logIfEnabled("error", "[ZipLoader] Parse zip failed:", error);
             throw error;
         }
     }
@@ -649,7 +663,7 @@ export class ZipLoader {
         if (ResCache.has(url)) {
             updateResCacheAccessTime(url);
             if (CACHE_CONFIG.ENABLE_CACHE_LOGGING) {
-                logIfEnabled('log', `[ZipLoader] 命中 ResCache: ${url}`);
+                logIfEnabled("log", `[ZipLoader] 命中 ResCache: ${url}`);
             }
             onComplete(null, ResCache.get(url));
             return;
@@ -657,8 +671,9 @@ export class ZipLoader {
 
         // 2. 检查 ZipCache
         const filePath = extractFilePath(url);
-        if (ZipCache.has(filePath)) {
-            this._loadFromZipCache(url, filePath, extension, isTextureFormat, onComplete);
+        const cacheKey = getZipCacheKey(filePath);
+        if (ZipCache.has(cacheKey)) {
+            this._loadFromZipCache(url, cacheKey, filePath, extension, isTextureFormat, onComplete);
             return;
         }
 
@@ -671,28 +686,29 @@ export class ZipLoader {
      */
     private _loadFromZipCache(
         url: string,
+        cacheKey: string,
         filePath: string,
         extension: string,
         isTextureFormat: boolean,
         onComplete: Function
     ): void {
-        logIfEnabled('log', `[ZipLoader] 使用 ZipCache: ${filePath}`);
-        const cache = ZipCache.get(filePath);
+        logIfEnabled("log", `[ZipLoader] 使用 ZipCache: ${filePath}`);
+        const cache = ZipCache.get(cacheKey);
         if (!cache) return;
 
         cache
             .async("uint8array")
             .then((data: Uint8Array) => {
                 if (isTextureFormat) {
-                    this._handleTextureData(url, filePath, data, onComplete);
+                    this._handleTextureData(url, cacheKey, filePath, data, onComplete);
                 } else if (data.length > IMAGE_SIZE_THRESHOLD) {
-                    this._handleLargeImage(url, filePath, cache, data, onComplete);
+                    this._handleLargeImage(url, cacheKey, filePath, cache, data, onComplete);
                 } else {
-                    this._handleSmallImage(url, filePath, extension, cache, data, onComplete);
+                    this._handleSmallImage(url, cacheKey, filePath, extension, cache, data, onComplete);
                 }
             })
             .catch((error: any) => {
-                logIfEnabled('error', "[ZipLoader] Load from ZipCache failed:", error);
+                logIfEnabled("error", "[ZipLoader] Load from ZipCache failed:", error);
                 onComplete(error, null);
             });
     }
@@ -700,10 +716,16 @@ export class ZipLoader {
     /**
      * 处理纹理数据
      */
-    private _handleTextureData(url: string, filePath: string, data: Uint8Array, onComplete: Function): void {
-        logIfEnabled('log', `[ZipLoader] 加载纹理: ${filePath}, 大小: ${formatSizeToMB(data.length)}`);
+    private _handleTextureData(
+        url: string,
+        cacheKey: string,
+        filePath: string,
+        data: Uint8Array,
+        onComplete: Function
+    ): void {
+        logIfEnabled("log", `[ZipLoader] 加载纹理: ${filePath}, 大小: ${formatSizeToMB(data.length)}`);
         cacheResource(url, data);
-        ZipCache.delete(filePath);
+        ZipCache.delete(cacheKey);
         onComplete(null, data);
     }
 
@@ -712,12 +734,13 @@ export class ZipLoader {
      */
     private _handleLargeImage(
         url: string,
+        cacheKey: string,
         filePath: string,
         cache: ZipFileObject,
         data: Uint8Array,
         onComplete: Function
     ): void {
-        logIfEnabled('log', `[ZipLoader] 加载大图片(Blob): ${filePath}, 大小: ${formatSizeToMB(data.length)}`);
+        logIfEnabled("log", `[ZipLoader] 加载大图片(Blob): ${filePath}, 大小: ${formatSizeToMB(data.length)}`);
 
         cache.async("blob").then((blob: any) => {
             const objectUrl = URL.createObjectURL(blob);
@@ -726,13 +749,13 @@ export class ZipLoader {
                 (img: HTMLImageElement) => {
                     URL.revokeObjectURL(objectUrl);
                     cacheResource(url, img);
-                    ZipCache.delete(filePath);
-                    logIfEnabled('log', `[ZipLoader] 图片加载成功: ${filePath}`);
+                    ZipCache.delete(cacheKey);
+                    logIfEnabled("log", `[ZipLoader] 图片加载成功: ${filePath}`);
                     onComplete(null, img);
                 },
                 (error: any) => {
                     URL.revokeObjectURL(objectUrl);
-                    logIfEnabled('error', `[ZipLoader] 图片加载失败: ${filePath}`, error);
+                    logIfEnabled("error", `[ZipLoader] 图片加载失败: ${filePath}`, error);
                     onComplete(createLoadError("Image load failed", error), null);
                 }
             );
@@ -744,13 +767,14 @@ export class ZipLoader {
      */
     private _handleSmallImage(
         url: string,
+        cacheKey: string,
         filePath: string,
         extension: string,
         cache: ZipFileObject,
         data: Uint8Array,
         onComplete: Function
     ): void {
-        logIfEnabled('log', `[ZipLoader] 加载小图片(Base64): ${filePath}, 大小: ${formatSizeToMB(data.length)}`);
+        logIfEnabled("log", `[ZipLoader] 加载小图片(Base64): ${filePath}, 大小: ${formatSizeToMB(data.length)}`);
 
         cache.async("base64").then((base64: string) => {
             const dataUrl = `data:image/${extension.slice(1)};base64,${base64}`;
@@ -758,12 +782,12 @@ export class ZipLoader {
                 dataUrl,
                 (img: HTMLImageElement) => {
                     cacheResource(url, img);
-                    ZipCache.delete(filePath);
-                    logIfEnabled('log', `[ZipLoader] 图片加载成功: ${filePath}`);
+                    ZipCache.delete(cacheKey);
+                    logIfEnabled("log", `[ZipLoader] 图片加载成功: ${filePath}`);
                     onComplete(null, img);
                 },
                 (error: any) => {
-                    logIfEnabled('error', `[ZipLoader] 图片加载失败: ${filePath}`, error);
+                    logIfEnabled("error", `[ZipLoader] 图片加载失败: ${filePath}`, error);
                     onComplete(createLoadError("Image load failed", error), null);
                 }
             );
@@ -843,21 +867,24 @@ export class ZipLoader {
             password?: string | null
         ) {
             const filePath = extractFilePath(url);
-
+            const cacheKey = getZipCacheKey(filePath);
             // 检查缓存（优先 ResCache）
             if (ResCache.has(url)) {
-                logIfEnabled('log', `[ZipLoader] XHR拦截 - 检测到 ResCache: ${url}`);
+                logIfEnabled("log", `[ZipLoader] XHR拦截 - 检测到 ResCache: ${url}`);
                 this.zipCacheUrl = url;
                 this.zipCachePath = filePath;
+                this.zipCacheKey = cacheKey;
                 this.isFromCache = true;
-            } else if (ZipCache.has(filePath)) {
-                logIfEnabled('log', `[ZipLoader] XHR拦截 - 检测到 ZipCache: ${filePath}`);
+            } else if (ZipCache.has(cacheKey)) {
+                logIfEnabled("log", `[ZipLoader] XHR拦截 - 检测到 ZipCache: ${filePath}`);
                 this.zipCacheUrl = url;
                 this.zipCachePath = filePath;
+                this.zipCacheKey = cacheKey;
                 this.isFromCache = false;
             } else {
                 this.zipCacheUrl = undefined;
                 this.zipCachePath = undefined;
+                this.zipCacheKey = undefined;
                 this.isFromCache = undefined;
             }
 
@@ -876,7 +903,7 @@ export class ZipLoader {
             data?: Document | XMLHttpRequestBodyInit | null
         ) {
             // 如果有缓存，使用缓存数据
-            if (this.zipCacheUrl && this.zipCachePath !== undefined) {
+            if (this.zipCacheUrl) {
                 await handleCachedRequest(this);
                 return;
             }
@@ -895,7 +922,10 @@ export class ZipLoader {
                 if (this.zipCacheUrl && ResCache.has(this.zipCacheUrl)) {
                     const res = ResCache.get(this.zipCacheUrl);
                     updateResCacheAccessTime(this.zipCacheUrl);
-                    logIfEnabled('log', `[ZipLoader] 返回缓存响应: ${this.zipCachePath}, 类型: ${this.responseType || "default"}`);
+                    logIfEnabled(
+                        "log",
+                        `[ZipLoader] 返回缓存响应: ${this.zipCachePath}, 类型: ${this.responseType || "default"}`
+                    );
                     return this.responseType === "json" ? JSON.parse(res) : res;
                 }
                 return accessor.get ? accessor.get.call(this) : undefined;
@@ -915,7 +945,7 @@ async function handleCachedRequest(xhr: ExtendedXHR): Promise<void> {
     try {
         // 如果 ResCache 中已有数据，直接使用
         if (xhr.isFromCache) {
-            logIfEnabled('log', `[ZipLoader] XHR 直接使用 ResCache: ${xhr.zipCacheUrl}`);
+            logIfEnabled("log", `[ZipLoader] XHR 直接使用 ResCache: ${xhr.zipCacheUrl}`);
             updateResCacheAccessTime(xhr.zipCacheUrl!);
         }
         // 如果只在 ZipCache 中，需要加载到 ResCache
@@ -929,7 +959,7 @@ async function handleCachedRequest(xhr: ExtendedXHR): Promise<void> {
         // 触发 onload 事件
         triggerXHRLoad(xhr);
     } catch (error) {
-        logIfEnabled('error', `[ZipLoader] 缓存资源加载失败: ${xhr.zipCachePath}`, error);
+        logIfEnabled("error", `[ZipLoader] 缓存资源加载失败: ${xhr.zipCachePath}`, error);
         triggerXHRError(xhr);
     }
 }
@@ -938,23 +968,25 @@ async function handleCachedRequest(xhr: ExtendedXHR): Promise<void> {
  * 从 ZipCache 加载到 ResCache
  */
 async function loadFromZipCacheToResCache(xhr: ExtendedXHR): Promise<void> {
-    const cache = ZipCache.get(xhr.zipCachePath!);
+    const cacheKey = xhr.zipCacheKey;
+    if (!cacheKey) return;
+    const cache = ZipCache.get(cacheKey);
     if (!cache) return;
 
     const responseType = xhr.responseType || "text";
-    logIfEnabled('log', `[ZipLoader] XHR 加载 ZipCache 资源: ${xhr.zipCachePath}, 类型: ${responseType}`);
+    logIfEnabled("log", `[ZipLoader] XHR 加载 ZipCache 资源: ${xhr.zipCachePath}, 类型: ${responseType}`);
 
     if (xhr.responseType === "json") {
         const text = await cache.async("text");
         cacheResource(xhr.zipCacheUrl!, text);
-        logIfEnabled('log', `[ZipLoader] JSON 资源加载成功: ${xhr.zipCachePath}`);
+        logIfEnabled("log", `[ZipLoader] JSON 资源加载成功: ${xhr.zipCachePath}`);
     } else {
         const res = await cache.async(responseType);
         cacheResource(xhr.zipCacheUrl!, res);
-        logIfEnabled('log', `[ZipLoader] 资源加载成功: ${xhr.zipCachePath}, 类型: ${responseType}`);
+        logIfEnabled("log", `[ZipLoader] 资源加载成功: ${xhr.zipCachePath}, 类型: ${responseType}`);
     }
 
-    ZipCache.delete(xhr.zipCachePath!);
+    ZipCache.delete(cacheKey);
 }
 
 /**
