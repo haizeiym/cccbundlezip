@@ -432,7 +432,14 @@ const createZipFileObject = (entry: ZipEntry): ZipFileObject => {
                             resolve(new TextDecoder().decode(entry.data));
                             break;
                         case "base64":
-                            resolve(btoa(String.fromCharCode(...entry.data)));
+                            // 分批处理大数据避免栈溢出 + 提高字符串拼接性能
+                            const chunkSize = 8192;
+                            const chunks: string[] = [];
+                            for (let i = 0; i < entry.data.length; i += chunkSize) {
+                                const chunk = entry.data.slice(i, i + chunkSize);
+                                chunks.push(String.fromCharCode(...chunk));
+                            }
+                            resolve(btoa(chunks.join('')));
                             break;
                         case "blob":
                             resolve(new Blob([entry.data]));
